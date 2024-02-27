@@ -1,0 +1,63 @@
+version: "3"
+
+services:
+    nginx:
+      build:
+          context: ./requirements/nginx
+      container_name: nginx
+      depends_on:
+          - wordpress
+      ports:
+          - "443:443"
+      networks:
+          - network_nginx
+      volumes:
+          - "volume_nginx:/var/www/html"
+    mariadb:
+        build:
+            context: ./requirements/mariadb
+        ports:
+            - "3306:3306"
+        networks:
+            - network_mariadb
+        restart: always
+        volumes:
+            - "volume_mariadb:/var/lib/mysql"
+        container_name: mariadb  
+        env_file:
+            - .env
+    wordpress:
+        build:
+            context: ./requirements/wordpress
+        depends_on:
+            mariadb:
+                condition: service_started
+        networks:
+            - network_mariadb
+            - network_nginx
+        ports:
+            - '9000:9000'
+        restart: always
+        env_file:
+            - .env
+        volumes:
+            - "volume_nginx:/var/www/html"
+        container_name: wordpress
+
+networks:
+    network_nginx:
+    network_mariadb:
+
+volumes:
+    volume_nginx:
+        driver: local
+        driver_opts:
+            type: volume
+            o : bind
+            device: /home/lbusi/data/volume_nginx
+    volume_mariadb:
+        driver: local
+        driver_opts:
+            type: none
+            o: bind
+            device: /home/lbusi/data/volume_mariadb
